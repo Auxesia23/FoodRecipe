@@ -1,6 +1,6 @@
 from typing_extensions import Annotated
 from typing import Optional
-from pydantic import ConfigDict, BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field, EmailStr
 from pydantic.functional_validators import BeforeValidator
 
 PyObjectId = Annotated[str, BeforeValidator(str)]
@@ -75,17 +75,17 @@ class MealCollection(BaseModel):
 
 
 
-from passlib.hash import bcrypt
 class UserModel(BaseModel) :
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    username : str = Field(...)
+    email : str = Field(...)
     password : str = Field(...)
+    verified : bool = Field(default=False)
     created_at : Optional[str] = None
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example" : {
-                "username" : "YourUsername",
+                "email" : "YourEmail@email.com",
                 "password" : "YourSecretPassword"
             }
            
@@ -93,18 +93,9 @@ class UserModel(BaseModel) :
     )
        
 
-    def verify_password(self, password: str) -> bool:
-        """Verify if provided password matches the hashed password."""
-        return bcrypt.verify(password, self.password)
-
-    @classmethod
-    def from_mongo(cls, user_data: dict):
-        """Helper method to transform MongoDB document into UserModel instance."""
-        return cls(**user_data)
-
 class UserResponseModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
-    username: str
+    email: EmailStr
     created_at: Optional[str] = None
 
 
