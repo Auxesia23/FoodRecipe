@@ -1,11 +1,12 @@
 from bson import ObjectId
-from fastapi import APIRouter,HTTPException, Response, status, File, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends,HTTPException, Response, status, File, UploadFile
 from pymongo import ReturnDocument
 
 from pathlib import Path
 import shutil
 
+from ..dependencies import CurrentUser
+from ..database.models import UserResponseModel
 from ..database.models import MealModel, MealCollection, UpdateMealModel
 from ..database.config import meal_collection
 
@@ -21,7 +22,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,
 )
-async def create_meal(meal: MealModel):
+async def create_meal(meal: MealModel, user : CurrentUser):
     """
     Insert a new m record.
 
@@ -39,7 +40,7 @@ async def create_meal(meal: MealModel):
 
 
 @router.get(
-    "/meals/",
+    "/meals",
     response_description="List all meals",
     response_model=MealCollection,
     response_model_by_alias=False,
@@ -72,7 +73,7 @@ async def show_meals(id: str):
     response_model=MealModel,
     response_model_by_alias=False,
 )
-async def update_meal(id: str, meal: UpdateMealModel):
+async def update_meal(id: str, meal: UpdateMealModel, user:CurrentUser):
     """
     Update individual fields of an existing student record.
 
@@ -102,7 +103,7 @@ async def update_meal(id: str, meal: UpdateMealModel):
 
 
 @router.delete("/meals/{id}", response_description="Delete a meal")
-async def delete_meal(id: str):
+async def delete_meal(id: str, user : CurrentUser):
     """
     Remove a single meal record from the database.
     """
@@ -119,7 +120,7 @@ async def delete_meal(id: str):
     "/meals/{id}/update-image",
     response_description="Update image URL of the meal",
 )
-async def update_image_url(id: str, file: UploadFile = File(...)):
+async def update_image_url(id: str, user : CurrentUser ,file: UploadFile = File(...)):
     """
     Update the image URL for a specific meal.
 

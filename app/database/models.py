@@ -11,6 +11,7 @@ class Ingredient(BaseModel) :
 
 class MealModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    name : str = Field(...)
     category : str = Field(...)
     area : str = Field(...)
     instructions : str = Field(...)
@@ -21,6 +22,7 @@ class MealModel(BaseModel):
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
+                "name" : "Ayam Goreng",
                 "category": "chicken",
                 "area": "Indonesia",
                 "instructions": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Libero velit quis hic. Amet corporis atque, totam officia ullam animi facere temporibus tempore architecto fuga, ipsam quisquam dignissimos magnam sunt saepe!",
@@ -42,6 +44,7 @@ class UpdateMealModel(BaseModel):
     A set of optional updates to be made to a document in the database.
     """
 
+    name : Optional[str] = None
     category : Optional[str] = None
     area : Optional[str] = None
     instructions : Optional[str] = None
@@ -52,6 +55,7 @@ class UpdateMealModel(BaseModel):
         arbitrary_types_allowed=True,
         json_schema_extra={
             "example": {
+                "name" : "Ayam goreng",
                 "category": "chicken",
                 "area": "Indonesia",
                 "instructions": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Libero velit quis hic. Amet corporis atque, totam officia ullam animi facere temporibus tempore architecto fuga, ipsam quisquam dignissimos magnam sunt saepe!",
@@ -79,6 +83,7 @@ class UserModel(BaseModel) :
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     email : str = Field(...)
     password : str = Field(...)
+    superuser : bool = Field(default=False)
     verified : bool = Field(default=False)
     created_at : Optional[str] = None
     model_config = ConfigDict(
@@ -96,7 +101,9 @@ class UserModel(BaseModel) :
 class UserResponseModel(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     email: EmailStr
-    created_at: Optional[str] = None
+
+class UserCollection(BaseModel) :
+    users : list[UserModel]
 
 
 

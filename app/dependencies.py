@@ -2,6 +2,9 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import EmailStr
+from typing import Annotated
+
+from app.database.models import UserResponseModel
 from .database.config import user_collection
 
 from passlib.hash import bcrypt
@@ -49,3 +52,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             detail='Invalid token'
         )
     return user
+
+CurrentUser = Annotated[UserResponseModel, Depends(get_current_user)]
+
+async def get_current_super_user(current_user : CurrentUser):
+    if current_user["superuser"] == False :
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Superuser permission required"
+        )
+    return current_user
+
+CurrentSuperUser = Annotated[UserResponseModel, Depends(get_current_super_user)]

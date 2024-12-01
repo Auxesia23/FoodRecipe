@@ -8,10 +8,10 @@ import os
 from passlib.hash import bcrypt
 from pydantic import EmailStr
 
-from app.dependencies import verify_user, get_current_user
+from app.dependencies import verify_user, CurrentUser, CurrentSuperUser
 from app.mail import VerifyEmail
 from ..database.config import user_collection
-from ..database.models import UserModel, UserResponseModel
+from ..database.models import UserModel, UserResponseModel, UserCollection
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 
@@ -81,9 +81,13 @@ async def create_user(user: UserModel):
     verification = await VerifyEmail(created_user["email"], token)
     return {"massage" : verification}
 
-@router.get("/users", response_model=UserResponseModel)
-async def get_user(user : UserResponseModel = Depends(get_current_user)) :
+@router.get("/users/me", response_model=UserResponseModel)
+async def get_user(user : CurrentUser) :
     return user
+
+@router.get("/users", response_model=UserCollection)
+async def users_list(user : CurrentSuperUser):
+    return UserCollection(users=await user_collection.find().to_list(1000))
 
 
 @router.post("/users/verifyemail")
