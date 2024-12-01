@@ -24,7 +24,7 @@ FM = FastMail(conf)
 
 async def VerifyEmail(email : EmailStr, token : str) :
     html = f"""<p>Hi, this is a test mail. Thanks for using FastAPI-Mail. Verify your email:</p><br>
-            <a href="127.0.0.1:8000/users/verifyemail?token={token}" 
+            <a href="127.0.0.1:8000/auth/verifyemail?token={token}" 
             style="display: inline-block; background-color: green; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; text-decoration: none; cursor: pointer;">
             Verify
             </a>"""
@@ -36,6 +36,6 @@ async def VerifyEmail(email : EmailStr, token : str) :
         body=html,
         subtype=MessageType.html)
 
-
+    print(f"127.0.0.1:8000/auth/verifyemail?token={token}")
     await FM.send_message(message)
     return "Verification mail has been sent"

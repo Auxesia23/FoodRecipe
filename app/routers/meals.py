@@ -5,8 +5,7 @@ from pymongo import ReturnDocument
 from pathlib import Path
 import shutil
 
-from ..dependencies import CurrentUser
-from ..database.models import UserResponseModel
+from ..dependencies import CurrentUser, is_owner
 from ..database.models import MealModel, MealCollection, UpdateMealModel
 from ..database.config import meal_collection
 
@@ -29,6 +28,8 @@ async def create_meal(meal: MealModel, user : CurrentUser):
     A unique `id` will be created and provided in the response.
     """
 
+    meal.author = user["email"]
+
     new_meal = await meal_collection.insert_one(
         meal.model_dump(by_alias=True, exclude=["id"])
     )
@@ -45,8 +46,32 @@ async def create_meal(meal: MealModel, user : CurrentUser):
     response_model=MealCollection,
     response_model_by_alias=False,
 )
-async def list_meals():
-    return MealCollection(meals=await meal_collection.find().to_list(1000))
+async def list_meals(
+    limit: int = 20, 
+    search: str = None, 
+    ingredient: str = None, 
+    area: str = None
+):
+    """
+    List meals with optional search on name, ingredients, and area.
+    """
+    # Buat filter untuk pencarian
+    query = {}
+    
+    if search:
+        query["name"] = {"$regex": search, "$options": "i"}  # Case-insensitive name search
+    
+    if ingredient:
+        query["ingredients"] = {
+            "$elemMatch": {"name": {"$regex": ingredient, "$options": "i"}}  # Search in ingredients
+        }
+
+    if area:
+        query["area"] = {"$regex": area, "$options": "i"}  # Case-insensitive area search
+
+    # Cari data sesuai query
+    meals = await meal_collection.find(query).to_list(limit)
+    return MealCollection(meals=meals)
 
 
 @router.get(
@@ -80,6 +105,14 @@ async def update_meal(id: str, meal: UpdateMealModel, user:CurrentUser):
     Only the provided fields will be updated.
     Any missing or `null` fields will be ignored.
     """
+
+    #Checking is it the owner who want to edit or not
+    if not await is_owner(id, user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This meal don't belong to you"
+        )
+    
     meal = {
         k: v for k, v in meal.model_dump(by_alias=True).items() if v is not None
     }
@@ -107,12 +140,19 @@ async def delete_meal(id: str, user : CurrentUser):
     """
     Remove a single meal record from the database.
     """
+    #Checking is it the owner who want to edit or not
+    if not await is_owner(id, user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This meal don't belong to you"
+        )
+
     delete_result = await meal_collection.delete_one({"_id": ObjectId(id)})
 
     if delete_result.deleted_count == 1:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-    raise HTTPException(status_code=404, detail=f"Student {id} not found")
+    raise HTTPException(status_code=404, detail=f"Meal {id} not found")
 
 
 
@@ -126,6 +166,13 @@ async def update_image_url(id: str, user : CurrentUser ,file: UploadFile = File(
 
     This will update the `imageUrl` field for the meal identified by `meal_id`.
     """
+
+    #Checking is it the owner who want to edit or not
+    if not await is_owner(id, user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This meal don't belong to you"
+        )
 
     # Cek apakah file yang diupload adalah gambar
     if not file.content_type.startswith('image/'):

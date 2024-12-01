@@ -18,6 +18,7 @@ class MealModel(BaseModel):
     youtubeUrl : str = Field(...)
     imageUrl : Optional[str] = None
     ingredients : list[Ingredient]
+    author : Optional[EmailStr] = None
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -85,6 +86,7 @@ class UserModel(BaseModel) :
     password : str = Field(...)
     superuser : bool = Field(default=False)
     verified : bool = Field(default=False)
+    active : bool = Field(default=True)
     created_at : Optional[str] = None
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
@@ -104,6 +106,18 @@ class UserResponseModel(BaseModel):
 
 class UserCollection(BaseModel) :
     users : list[UserModel]
+
+class UpdateUserPrivilage(BaseModel):
+    superuser : Optional[bool] = None
+    active : Optional[bool] = None
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example" : {
+                "superuser" : True,
+                "active" : True
+            }
+        }
+    )
 
 
 
