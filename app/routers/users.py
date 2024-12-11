@@ -26,6 +26,3 @@ async def get_user(user : CurrentUser) :
 
 
 
-@router.get("/meals", response_model=MealCollection)
-async def User_meals(user : CurrentUser) :
-    return MealCollection(meals = await meal_collection.find({"author" : user["email"]}).to_list(100))

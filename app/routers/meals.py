@@ -15,7 +15,7 @@ UPLOAD_DIR = Path("static/images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post(
-    "/meals/",
+    "/meals",
     response_description="Add new meal",
     response_model=MealModel,
     status_code=status.HTTP_201_CREATED,
@@ -56,7 +56,9 @@ async def list_meals(
     List meals with optional search on name, ingredients, and area.
     """
     # Buat filter untuk pencarian
-    query = {}
+    query = {
+        "verification_status" : "approved"
+    }
     
     if search:
         query["name"] = {"$regex": search, "$options": "i"}  # Case-insensitive name search
@@ -72,6 +74,11 @@ async def list_meals(
     # Cari data sesuai query
     meals = await meal_collection.find(query).to_list(limit)
     return MealCollection(meals=meals)
+
+
+@router.get("/meals/mymeals", response_model=MealCollection)
+async def User_meals(user : CurrentUser) :
+    return MealCollection(meals = await meal_collection.find({"author" : user["email"]}).to_list(100))
 
 
 @router.get(

@@ -19,6 +19,7 @@ class MealModel(BaseModel):
     imageUrl : Optional[str] = None
     ingredients : list[Ingredient]
     author : Optional[EmailStr] = None
+    verification_status: str = Field("pending", enum=["pending", "approved", "rejected"])
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -72,6 +73,8 @@ class UpdateMealModel(BaseModel):
         },
     )
 
+class UpdateMealStatus(BaseModel):
+    verification_status: str = Field("pending", enum=["pending", "approved", "rejected"])
 
 
 class MealCollection(BaseModel):
@@ -83,7 +86,7 @@ class MealCollection(BaseModel):
 class UserModel(BaseModel) :
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     email : str = Field(...)
-    password : str = Field(...)
+    password : Optional[str] = Field(...)
     superuser : bool = Field(default=False)
     verified : bool = Field(default=False)
     active : bool = Field(default=True)
@@ -93,7 +96,7 @@ class UserModel(BaseModel) :
         json_schema_extra={
             "example" : {
                 "email" : "YourEmail@email.com",
-                "password" : "YourSecretPassword"
+                "password" : "YourSecretPassword",
             }
            
         }

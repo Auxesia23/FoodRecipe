@@ -3,7 +3,14 @@ from fastapi.security import OAuth2PasswordBearer
 
 from .routers import meals, static, users, admin, auth
 
+from starlette.middleware.sessions import SessionMiddleware
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 app = FastAPI()
+
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='token')
 

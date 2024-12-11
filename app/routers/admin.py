@@ -1,7 +1,7 @@
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status
 
-from app.database.models import UserCollection, UserModel, UpdateUserPrivilage
+from app.database.models import MealCollection, UserCollection, UserModel, UpdateUserPrivilage, MealModel, UpdateMealStatus
 from app.dependencies import CurrentSuperUser
 from app.database.config import user_collection, meal_collection
 router = APIRouter(tags=["Admin"], prefix="/admin")
@@ -77,3 +77,60 @@ async def update_user_privileges(
     # Kembalikan data user yang diperbarui
     updated_user = await user_collection.find_one({"_id": ObjectId(id)})
     return updated_user
+
+
+
+
+@router.get(
+    "/meals",
+    response_description="List pending meals",
+    response_model=MealCollection,
+    response_model_by_alias=False,
+)
+async def list_meals(user : CurrentSuperUser):
+    meals = await meal_collection.find({ "verification_status" : "pending"}).to_list()
+    return MealCollection(meals=meals)
+
+
+
+
+@router.patch("/meals{id}",response_description="Updated Meal",response_model=MealModel)
+async def update_meal_status(id: str, updates: UpdateMealStatus, user: CurrentSuperUser ):
+    # Validasi ObjectId
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid user ID"
+        )
+
+    # Cari meal berdasarkan ID
+    meal = await meal_collection.find_one({"_id": ObjectId(id)})
+    if not meal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="User not found"
+        )
+
+    # Filter atribut yang akan diupdate
+    update_data = updates.dict(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="No updates provided"
+        )
+
+    # Update user di database
+    update_result = await meal_collection.update_one(
+        {"_id": ObjectId(id)}, 
+        {"$set": update_data}
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Failed to update user"
+        )
+
+    # Kembalikan data user yang diperbarui
+    updated_meal = await meal_collection.find_one({"_id": ObjectId(id)})
+    return updated_meal
