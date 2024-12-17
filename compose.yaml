@@ -17,7 +17,7 @@ services:
       - MONGODB_URL=mongodb://root:root@mongo:27017/
       - SECRET_KEY=/run/secrets/jwt_secret
       - MAIL_USERNAME=example@mail.com
-      - MAIL_PASSWORD=MailAppPassword
+      - MAIL_PASSWORD=run/secrets/mail_password
       - MAIL_FROM=example@mail.com
 
     volumes:
@@ -42,3 +42,5 @@ volumes:
 secrets:
   jwt_secret:
     file: secret/jwt_secret.txt
+  mail_password:
+    file: secret/mail_password
