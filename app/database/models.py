@@ -18,8 +18,7 @@ class MealModel(BaseModel):
     youtubeUrl : str = Field(...)
     imageUrl : Optional[str] = None
     ingredients : list[Ingredient]
-    author : Optional[EmailStr] = None
-    verification_status: str = Field("pending", enum=["pending", "approved", "rejected"])
+   
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -39,6 +38,32 @@ class MealModel(BaseModel):
         },
     )
 
+class MealAdmin(MealModel) :
+    author : EmailStr
+    verification_status: str = Field("pending", enum=["pending", "approved", "rejected"])
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "name" : "Ayam Goreng",
+                "category": "chicken",
+                "area": "Indonesia",
+                "instructions": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Libero velit quis hic. Amet corporis atque, totam officia ullam animi facere temporibus tempore architecto fuga, ipsam quisquam dignissimos magnam sunt saepe!",
+                "youtubeUrl": "https://youtube.com/videoexample",
+                "ingredients" : [
+                    {
+                        "name": "Paha ayam",
+                        "measure": "500 gram",
+                    }
+                ],
+                "author" : "user@email.com",
+                "verification_status" : "approved"
+            }
+        },
+    )
+
+class MealAdminCollection(BaseModel):
+    meals : list[MealAdmin]
 
 
 class UpdateMealModel(BaseModel):
@@ -87,10 +112,6 @@ class UserModel(BaseModel) :
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     email : str = Field(...)
     password : Optional[str] = Field(...)
-    superuser : bool = Field(default=False)
-    verified : bool = Field(default=False)
-    active : bool = Field(default=True)
-    created_at : Optional[str] = None
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         json_schema_extra={
@@ -101,6 +122,27 @@ class UserModel(BaseModel) :
            
         }
     )
+
+class UserAdmin(UserModel):
+    superuser : bool 
+    verified : bool 
+    active : bool 
+    created_at : str
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example" : {
+                "email" : "YourEmail@email.com",
+                "password" : "YourSecretPassword",
+                "superuser" : False,
+                "active" : False,
+                "created_at" : "2024-12-01T08:36:18.248618"
+            }
+           
+        }
+    )
+
        
 
 class UserResponseModel(BaseModel):
@@ -108,7 +150,7 @@ class UserResponseModel(BaseModel):
     email: EmailStr
 
 class UserCollection(BaseModel) :
-    users : list[UserModel]
+    users : list[UserAdmin]
 
 class UpdateUserPrivilage(BaseModel):
     superuser : Optional[bool] = None

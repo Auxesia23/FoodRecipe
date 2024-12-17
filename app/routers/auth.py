@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from dotenv import load_dotenv
@@ -23,21 +24,22 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 JWT_SECRET = SECRET_KEY
 
 
-oauth = OAuth()
-google = oauth.register(
-    name='google',
-    client_id=os.getenv('GOOGLE_CLIENT_ID'),
-    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
-    # This is only needed if using openId to fetch user info
-    client_kwargs={'scope': 'openid email profile'},
-    jwks_uri = "https://www.googleapis.com/oauth2/v3/certs"
-)
+# REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
+# oauth = OAuth()
+# google = oauth.register(
+#     name='google',
+#     client_id=os.getenv('GOOGLE_CLIENT_ID'),
+#     client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+#     access_token_url='https://accounts.google.com/o/oauth2/token',
+#     access_token_params=None,
+#     authorize_url='https://accounts.google.com/o/oauth2/auth',
+#     authorize_params=None,
+#     api_base_url='https://www.googleapis.com/oauth2/v1/',
+#     userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',
+#     # This is only needed if using openId to fetch user info
+#     client_kwargs={'scope': 'openid email profile'},
+#     jwks_uri = "https://www.googleapis.com/oauth2/v3/certs"
+# )
 
 
 
@@ -72,9 +74,12 @@ async def create_user(user: UserModel):
     hashed_password = bcrypt.hash(user.password)
 
     # Prepare user data
-    user_data = user.model_dump(by_alias=True, exclude=["id"])
+    user_data = user.dict(by_alias=True, exclude=["id"])
     user_data["password"] = hashed_password
     user_data["created_at"] = datetime.utcnow().isoformat()
+    user_data["superuser"] = False
+    user_data["active"] = False
+    user_data["verified"] = False
 
     # Check if the user already exists
     existing_user = await user_collection.find_one({"email": user.email})
@@ -88,8 +93,8 @@ async def create_user(user: UserModel):
     created_user = await user_collection.find_one({"_id": result.inserted_id})
 
     payload = {
-        "email": user["email"],
-        "superuser" : user["superuser"]
+        "email": created_user["email"],
+        "superuser" : created_user["superuser"]
     }
 
     # Encode token JWT
@@ -129,42 +134,43 @@ async def email_verification(token : str) :
 
 
 
-@router.get('/google')
-async def login_with_google(request: Request):
-    redirect_uri = os.getenv("GOOGLE_REDIRECT_URI")
-    print(request.session)
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+# @router.get('/google')
+# async def login_with_google(request: Request):
+#     print(REDIRECT_URI)
+#     return await oauth.google.authorize_redirect(request, REDIRECT_URI)
 
 
-@router.get('/google/callback')
-async def google_auth_callback(request: Request):
-    token = await oauth.google.authorize_access_token(request)
-    user_info = token.get('userinfo')
+# @router.get('/google/callback')
+# async def google_auth_callback(request: Request):
+#     token = await oauth.google.authorize_access_token(request)
+#     user_info = token.get('userinfo')
     
-    if user_info:
-        # Misalnya: Cek atau buat pengguna di database Anda
-        user = await user_collection.find_one({"email": user_info["email"]})
-        if not user:
-            # Tambahkan pengguna baru ke database jika belum ada
-            new_user = {
-                "email": user_info["email"],
-                "password": None,  # Karena autentikasi menggunakan Google
-                "verified": True,
-                "active": True,
-                "superuser": False,
-            }
-            await user_collection.insert_one(new_user)
-            user = new_user
+#     if user_info:
+#         # Misalnya: Cek atau buat pengguna di database Anda
+#         user = await user_collection.find_one({"email": user_info["email"]})
+#         if not user:
+#             # Tambahkan pengguna baru ke database jika belum ada
+#             new_user = {
+#                 "email": user_info["email"],
+#                 "password": None,  # Karena autentikasi menggunakan Google
+#                 "verified": True,
+#                 "active": True,
+#                 "superuser": False,
+#             }
+#             await user_collection.insert_one(new_user)
+#             user = new_user
         
-        # Buat token JWT
-        payload = {
-        "email": user["email"],
-        "superuser" : user["superuser"]
-    }
+#         # Buat token JWT
+#         payload = {
+#         "email": user["email"],
+#         "superuser" : user["superuser"]
+#     }
 
-    # Encode token JWT
-        token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-        return {"access_token": token, "token_type": "bearer"}
+#     # Encode token JWT
+#         token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+        
+#         return {"acces_token" : token}
+        
     
-    raise HTTPException(status_code=400, detail="Google authentication failed")
+#     raise HTTPException(status_code=400, detail="Google authentication failed")
 

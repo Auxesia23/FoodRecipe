@@ -27,11 +27,13 @@ async def create_meal(meal: MealModel, user : CurrentUser):
 
     A unique `id` will be created and provided in the response.
     """
+    meal_data = meal.dict(by_alias=True, exclude=['id'])
 
-    meal.author = user["email"]
+    meal_data['author'] = user["email"]
+    meal_data['verification_status'] = 'pending'
 
     new_meal = await meal_collection.insert_one(
-        meal.model_dump(by_alias=True, exclude=["id"])
+        meal_data
     )
     created_meal = await meal_collection.find_one(
         {"_id": new_meal.inserted_id}
@@ -48,32 +50,43 @@ async def create_meal(meal: MealModel, user : CurrentUser):
 )
 async def list_meals(
     limit: int = 20, 
-    search: str = None, 
-    ingredient: str = None, 
-    area: str = None
+    search: str = None,
 ):
     """
-    List meals with optional search on name, ingredients, and area.
+    List meals with optional search on name, ingredients, and area,
+    supporting multiple keywords.
     """
     # Buat filter untuk pencarian
     query = {
-        "verification_status" : "approved"
+        "verification_status": "approved"
     }
     
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}  # Case-insensitive name search
-    
-    if ingredient:
-        query["ingredients"] = {
-            "$elemMatch": {"name": {"$regex": ingredient, "$options": "i"}}  # Search in ingredients
-        }
+        keywords = search.split()  # Pecah search menjadi array kata kunci
+        query["$and"] = [  # Semua kata kunci harus cocok
+            {
+                "$or": [
+                    {"name": {"$regex": keyword, "$options": "i"}},  # Case-insensitive name search
+                    {"area": {"$regex": keyword, "$options": "i"}},  # Case-insensitive area search
+                    {
+                        "ingredients": {
+                            "$elemMatch": {"name": {"$regex": keyword, "$options": "i"}}
+                        }
+                    },
+                ]
+            }
+            for keyword in keywords
+        ]
 
-    if area:
-        query["area"] = {"$regex": area, "$options": "i"}  # Case-insensitive area search
+    # if search:
+    #     query["$text"] = {"$search": search}  # Pencarian menggunakan text index
+
 
     # Cari data sesuai query
     meals = await meal_collection.find(query).to_list(limit)
     return MealCollection(meals=meals)
+
+
 
 
 @router.get("/meals/mymeals", response_model=MealCollection)
@@ -91,6 +104,15 @@ async def show_meals(id: str):
     """
     Get the record for a specific student, looked up by `id`.
     """
+
+    # Validasi ObjectId
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid meal ID"
+        )
+    
+    
     if (
         meal := await meal_collection.find_one({"_id": ObjectId(id)})
     ) is not None:
@@ -112,6 +134,14 @@ async def update_meal(id: str, meal: UpdateMealModel, user:CurrentUser):
     Only the provided fields will be updated.
     Any missing or `null` fields will be ignored.
     """
+
+    # Validasi ObjectId
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid meal ID"
+        )
+    
 
     #Checking is it the owner who want to edit or not
     if not await is_owner(id, user):
@@ -147,6 +177,14 @@ async def delete_meal(id: str, user : CurrentUser):
     """
     Remove a single meal record from the database.
     """
+    # Validasi ObjectId
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid meal ID"
+        )
+    
+
     #Checking is it the owner who want to edit or not
     if not await is_owner(id, user):
         raise HTTPException(
@@ -173,6 +211,13 @@ async def update_image_url(id: str, user : CurrentUser ,file: UploadFile = File(
 
     This will update the `imageUrl` field for the meal identified by `meal_id`.
     """
+    # Validasi ObjectId
+    if not ObjectId.is_valid(id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Invalid meal ID"
+        )
+
 
     #Checking is it the owner who want to edit or not
     if not await is_owner(id, user):

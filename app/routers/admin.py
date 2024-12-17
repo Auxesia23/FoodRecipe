@@ -1,7 +1,7 @@
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, status
 
-from app.database.models import MealCollection, UserCollection, UserModel, UpdateUserPrivilage, MealModel, UpdateMealStatus
+from app.database.models import MealAdminCollection, UserCollection, UserAdmin, UpdateUserPrivilage, MealAdmin, UpdateMealStatus
 from app.dependencies import CurrentSuperUser
 from app.database.config import user_collection, meal_collection
 router = APIRouter(tags=["Admin"], prefix="/admin")
@@ -11,7 +11,7 @@ router = APIRouter(tags=["Admin"], prefix="/admin")
 async def users_list(user : CurrentSuperUser):
     return UserCollection(users=await user_collection.find().to_list(1000))
 
-@router.get("/users/{id}", response_model=UserModel)
+@router.get("/users/{id}", response_model=UserAdmin)
 async def get_user(user : CurrentSuperUser, id : str) :
 
     # Validasi ObjectId
@@ -30,7 +30,7 @@ async def get_user(user : CurrentSuperUser, id : str) :
     return user_obj
 
 
-@router.patch("/users/{id}", response_model=UserModel)
+@router.patch("/users/{id}", response_model=UserAdmin)
 async def update_user_privileges(
     id: str, 
     updates: UpdateUserPrivilage, 
@@ -84,17 +84,17 @@ async def update_user_privileges(
 @router.get(
     "/meals",
     response_description="List pending meals",
-    response_model=MealCollection,
+    response_model=MealAdminCollection,
     response_model_by_alias=False,
 )
 async def list_meals(user : CurrentSuperUser):
     meals = await meal_collection.find({ "verification_status" : "pending"}).to_list()
-    return MealCollection(meals=meals)
+    return MealAdminCollection(meals=meals)
 
 
 
 
-@router.patch("/meals{id}",response_description="Updated Meal",response_model=MealModel)
+@router.patch("/meals{id}",response_description="Updated Meal",response_model=MealAdmin)
 async def update_meal_status(id: str, updates: UpdateMealStatus, user: CurrentSuperUser ):
     # Validasi ObjectId
     if not ObjectId.is_valid(id):
