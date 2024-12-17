@@ -78,7 +78,7 @@ async def create_user(user: UserModel):
     user_data["password"] = hashed_password
     user_data["created_at"] = datetime.utcnow().isoformat()
     user_data["superuser"] = False
-    user_data["active"] = False
+    user_data["active"] = True
     user_data["verified"] = False
 
     # Check if the user already exists

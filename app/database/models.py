@@ -62,6 +62,29 @@ class MealAdmin(MealModel) :
         },
     )
 
+class MealResponse(MealModel):
+    favourited : bool
+
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "name" : "Ayam Goreng",
+                "category": "chicken",
+                "area": "Indonesia",
+                "instructions": "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Libero velit quis hic. Amet corporis atque, totam officia ullam animi facere temporibus tempore architecto fuga, ipsam quisquam dignissimos magnam sunt saepe!",
+                "youtubeUrl": "https://youtube.com/videoexample",
+                "ingredients" : [
+                    {
+                        "name": "Paha ayam",
+                        "measure": "500 gram",
+                    }
+                ],
+                'favourited' : False
+            }
+        },
+    )
+
 class MealAdminCollection(BaseModel):
     meals : list[MealAdmin]
 

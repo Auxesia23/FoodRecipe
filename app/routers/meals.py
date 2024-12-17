@@ -1,3 +1,4 @@
+from typing import Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends,HTTPException, Response, status, File, UploadFile
 from pymongo import ReturnDocument
@@ -6,8 +7,8 @@ from pathlib import Path
 import shutil
 
 from ..dependencies import CurrentUser, is_owner
-from ..database.models import MealModel, MealCollection, UpdateMealModel
-from ..database.config import meal_collection
+from ..database.models import MealModel, MealCollection, UpdateMealModel, MealResponse
+from ..database.config import meal_collection, favourites_collection
 
 router = APIRouter(tags=["Meals"])
 
@@ -96,13 +97,13 @@ async def User_meals(user : CurrentUser) :
 
 @router.get(
     "/meals/{id}",
-    response_description="Get a single student",
-    response_model=MealModel,
+    response_description="Get a single meal",
+    response_model=MealResponse,
     response_model_by_alias=False,
 )
-async def show_meals(id: str):
+async def show_meals(id: str, user: CurrentUser):
     """
-    Get the record for a specific student, looked up by `id`.
+    Get the record for a specific meal, looked up by `id`.
     """
 
     # Validasi ObjectId
@@ -112,13 +113,40 @@ async def show_meals(id: str):
             detail="Invalid meal ID"
         )
     
+    # Cari meal berdasarkan ID
+    meal = await meal_collection.find_one({"_id": ObjectId(id)})
+    if not meal:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"Meal {id} not found"
+        )
     
-    if (
-        meal := await meal_collection.find_one({"_id": ObjectId(id)})
-    ) is not None:
-        return meal
+    # Default favourited = False jika user tidak ada
+    favourited = False
 
-    raise HTTPException(status_code=404, detail=f"Meal {id} not found")
+    is_favourited = await favourites_collection.find_one({
+        'user_id': ObjectId(user['_id']),
+        'meal._id': ObjectId(id)
+    })
+    if is_favourited:
+        favourited = True
+    
+    # Return response dengan field favourited
+    return MealResponse(
+        **meal,
+        favourited=favourited
+    )
+
+
+@router.post("/meals/{id}/favourite")
+async def favourite_meal(id : str, user : CurrentUser) :
+    existing_favourite = await favourites_collection.find_one_and_delete({'user_id' : ObjectId(user["_id"]), 'meal._id' : ObjectId(id)})
+    if existing_favourite :
+        return {'detail' : f'Meal {id} deleted from favourite'}
+    meal = await meal_collection.find_one({'_id' : ObjectId(id)})
+    favourite = await favourites_collection.insert_one({'user_id' : user['_id'], 'meal' : meal})
+    return {'detail' : f'Meal {id} added to favourite'}
+
 
 
 @router.put(

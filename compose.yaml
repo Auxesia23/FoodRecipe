@@ -8,7 +8,7 @@
 # database or a cache. For examples, see the Awesome Compose repository:
 # https://github.com/docker/awesome-compose
 services:
-  server:
+  fastapi:
     build:
       context: .
     ports:
@@ -16,6 +16,10 @@ services:
     environment:
       - MONGODB_URL=mongodb://root:root@mongo:27017/
       - SECRET_KEY=/run/secrets/jwt_secret
+      - MAIL_USERNAME=example@mail.com
+      - MAIL_PASSWORD=MailAppPassword
+      - MAIL_FROM=example@mail.com
+
     volumes:
       - ./static:/app/static
     depends_on:
@@ -24,6 +28,8 @@ services:
   mongo:
     image: mongo
     restart: always
+    ports:
+      - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
@@ -35,5 +41,4 @@ volumes:
 
 secrets:
   jwt_secret:
-    file: ./jwt_secret.txt
-
+    file: secret/jwt_secret.txt
