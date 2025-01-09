@@ -139,12 +139,12 @@ async def show_meals(id: str, user: CurrentUser):
 
 
 @router.post("/meals/{id}/favourite")
-async def favourite_meal(id : str, user : CurrentUser) :
+async def add_meal_to_favourite(id : str, user : CurrentUser) :
     existing_favourite = await favourites_collection.find_one_and_delete({'user_id' : ObjectId(user["_id"]), 'meal._id' : ObjectId(id)})
     if existing_favourite :
         return {'detail' : f'Meal {id} deleted from favourite'}
     meal = await meal_collection.find_one({'_id' : ObjectId(id)})
-    favourite = await favourites_collection.insert_one({'user_id' : user['_id'], 'meal' : meal})
+    favourite = await favourites_collection.insert_one({'user_id' : user['_id'], 'meal_id' : meal['_id']})
     return {'detail' : f'Meal {id} added to favourite'}
 
 
