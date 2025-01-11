@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from dotenv import load_dotenv
@@ -103,11 +104,11 @@ async def create_user(user: UserModel, task : BackgroundTasks):
 
 
 
-@router.get("/verifyemail",description="Verify email with token")
-async def email_verification(token : str) :
+@router.get("/verifyemail", description="Verify email with token", response_class=HTMLResponse)
+async def email_verification(token: str):
     try:
         # Decode JWT
-        payload = jwt.decode(token, JWT_SECRET, algorithms=['HS256'])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         email = payload.get("email")
         if not email:
             raise HTTPException(status_code=400, detail="Invalid token: email missing")
@@ -122,10 +123,64 @@ async def email_verification(token : str) :
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        return {"message": "Email successfully verified"}
+        # HTML response
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Email Verified</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    text-align: center;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    background-color: #f4f4f9;
+                    color: #333;
+                }}
+                .container {{
+                    max-width: 600px;
+                    background: #fff;
+                    padding: 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                }}
+                h1 {{
+                    color: #4CAF50;
+                }}
+                p {{
+                    font-size: 16px;
+                }}
+                a {{
+                    text-decoration: none;
+                    color: #4CAF50;
+                    font-weight: bold;
+                }}
+                a:hover {{
+                    color: #3b8c40;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>Email Verified!</h1>
+                <p>Thank you, <strong>{email}</strong>. Your email has been successfully verified.</p>
+                <p>You can now safely close this tab.</p>
+            </div>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=html_content, status_code=200)
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 

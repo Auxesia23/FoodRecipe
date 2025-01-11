@@ -6,7 +6,7 @@ from pydantic import EmailStr
 
 load_dotenv()
 
-FRONTEND_DOMAIN = os.getenv("FRONTEND_DOMAIN")
+DOMAIN = os.getenv("DOMAIN")
 
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv('MAIL_USERNAME'),  # Ganti dengan email Anda
@@ -26,7 +26,7 @@ FM = FastMail(conf)
 
 async def VerifyEmail(email : EmailStr, token : str) :
     html = f"""<p>Hi, this is a test mail. Thanks for using FastAPI-Mail. Verify your email:</p><br>
-            <a href="127.0.0.1:8000/auth/verifyemail?token={token}" 
+            <a href="{DOMAIN}/auth/verifyemail?token={token}" 
             style="display: inline-block; background-color: green; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-size: 16px; text-decoration: none; cursor: pointer;">
             Verify
             </a>"""
@@ -38,6 +38,6 @@ async def VerifyEmail(email : EmailStr, token : str) :
         body=html,
         subtype=MessageType.html)
 
-
+    print(f"{DOMAIN}/auth/verifyemail?token={token}")
     await FM.send_message(message)
     return "Verification mail has been sent"
