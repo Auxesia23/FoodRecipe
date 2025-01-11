@@ -6,6 +6,8 @@ from pydantic import EmailStr
 
 load_dotenv()
 
+FRONTEND_DOMAIN = os.getenv("FRONTEND_DOMAIN")
+
 conf = ConnectionConfig(
     MAIL_USERNAME=os.getenv('MAIL_USERNAME'),  # Ganti dengan email Anda
     MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),  # Gunakan password akun atau App Password
@@ -36,6 +38,6 @@ async def VerifyEmail(email : EmailStr, token : str) :
         body=html,
         subtype=MessageType.html)
 
-    print(f"127.0.0.1:8000/auth/verifyemail?token={token}")
+
     await FM.send_message(message)
     return "Verification mail has been sent"

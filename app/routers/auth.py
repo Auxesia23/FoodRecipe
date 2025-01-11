@@ -1,6 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 
 from dotenv import load_dotenv
@@ -69,7 +68,7 @@ async def generate_token(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.post("/signup", 
             status_code=status.HTTP_201_CREATED
             )
-async def create_user(user: UserModel):
+async def create_user(user: UserModel, task : BackgroundTasks):
     # Hash the password before saving
     hashed_password = bcrypt.hash(user.password)
 
@@ -99,9 +98,8 @@ async def create_user(user: UserModel):
 
     # Encode token JWT
     token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-
-    verification = await VerifyEmail(created_user["email"], token)
-    return {"massage" : verification}
+    task.add_task(VerifyEmail,created_user['email'],token)
+    return {"massage" : "User created successfully. Verification email sent."}
 
 
 

@@ -1,16 +1,21 @@
-from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter, Depends,HTTPException, Response, status, File, UploadFile
+from fastapi import APIRouter,HTTPException, Response, status, File, UploadFile
 from pymongo import ReturnDocument
 
 from pathlib import Path
 import shutil
+from dotenv import load_dotenv
+import os
 
 from ..dependencies import CurrentUser, is_owner
 from ..database.models import MealModel, MealCollection, UpdateMealModel, MealResponse
 from ..database.config import meal_collection, favourites_collection
 
 router = APIRouter(tags=["Meals"])
+
+load_dotenv()
+
+DOMAIN = os.getenv("DOMAIN")
 
 UPLOAD_DIR = Path("static/images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -265,7 +270,7 @@ async def update_image_url(id: str, user : CurrentUser ,file: UploadFile = File(
         shutil.copyfileobj(file.file, buffer)
     
     # Generate URL untuk gambar yang baru
-    new_image_url = f"http://127.0.0.1:8000/static/images/{file.filename}"
+    new_image_url = f"http://{DOMAIN}/static/images/{file.filename}"
 
     # Update meal di MongoDB
     update_result = await meal_collection.update_one(
